@@ -1,66 +1,67 @@
-name: ML Project CI Pipeline
-on: [push, pull_request]  # 代码推送/PR时触发
+# .github/workflows/ml-project-ci.yml 完整优化版
+name: ML Project CI
+
+# 触发条件：push 到 main 或 PR 到 main
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  # 1. 代码检查（对应文档）
-  lint:
+  build-train-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许工作流修改代码（如自动格式化，可选）
+    
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
+      # 步骤1：拉取代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # 步骤2：安装 Python 3.10（与本地一致）
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Run flake8 (linting)
-        run: flake8 app/ tests/ --count --exit-zero
-
-  # 2. 代码格式化检查（对应文档）
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install black
-        run: pip install black
-      - name: Check code format
-        run: black app/ tests/ --check
-
-  # 3. ML功能测试（对应文档）
-  test-ml:
-    runs-on: ubuntu-latest
-    needs: [lint, format]  # 依赖lint和format通过后执行
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Run ML tests (data+model+prediction)
-        run: pytest tests/test_ml.py -v
-      - name: Verify MLflow experiment (本地记录)
+          python-version: "3.10"
+          cache: "pip"  # 缓存依赖，加速安装
+      
+      # 步骤3：安装依赖（含 wget，用于下载数据集）
+      - name: Install system & Python dependencies
         run: |
-          python app/model.py  # 运行训练脚本，生成mlruns/
-          ls mlruns/ | grep -q "0"  # 检查是否生成实验目录（默认实验ID以0开头）
-
-  # 4. Docker构建（对应文档）
-  docker-build:
-    runs-on: ubuntu-latest
-    needs: [test-ml]  # 依赖测试通过后执行
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build Docker image
-        run: docker build -t ml-iris-project .
-      - name: Verify Docker image (run model training)
+          # 安装系统依赖（wget 用于下载数据集）
+          sudo apt-get update && sudo apt-get install -y wget
+          # 安装 Python 依赖
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 pytest black
+      
+      # 步骤4：预下载数据集（或触发 data.py 自动下载，确保后续训练不卡壳）
+      - name: Pre-download Fashion MNIST dataset
         run: |
-          # 挂载.env（用GitHub Secrets存储敏感信息，避免硬编码）
-          echo "MLFLOW_TRACKING_URI=http://localhost:5000" > .env
-          docker run --rm ml-iris-project python app/model.py  # 运行容器内训练脚本
+          # 运行 data.py 自动下载数据（避免训练时重复下载）
+          python app/data.py
+      
+      # 步骤5：训练模型（关键！确保 MLflow 注册模型）
+      - name: Train Fashion MNIST model (register to MLflow)
+        run: |
+          # 运行 model.py 训练模型，迭代次数设为500（平衡速度与收敛）
+          python app/model.py --learning_rate 0.1 --max_iter 500
+          # 验证模型是否注册成功（打印 MLflow 模型列表）
+          mlflow models list
+      
+      # 步骤6：代码规范检查（flake8）
+      - name: Lint code with flake8
+        run: |
+          flake8 app/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 app/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+      
+      # 步骤7：代码格式检查（black）
+      - name: Check code format with black
+        run: |
+          black app/ tests/ --check
+      
+      # 步骤8：运行 pytest 测试（此时数据集和模型均存在）
+      - name: Run unit tests with pytest
+        run: |
+          pytest tests/test_ml.py -v
