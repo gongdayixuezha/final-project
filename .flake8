@@ -1,5 +1,6 @@
 [flake8]
-max-line-length = 88  # 关键：从79改为88，与black默认行宽匹配
-ignore = E203,W503     # 保留原有忽略规则（避免不必要警告）
-extend-ignore = E731   # 允许ML代码中常用的lambda表达式
-exclude = venv/,mlruns/  # 排除虚拟环境和MLflow实验目录
+max-line-length = 88  
+extend-ignore = E731   
+exclude = venv/,mlruns/  
+select = E9,F63,F7,F82,W293
+ignore = E203
