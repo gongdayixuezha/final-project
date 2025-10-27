@@ -17,6 +17,7 @@ if project_root not in sys.path:
 
 # 导入公共路径工具
 from app.utils import add_project_root_to_path
+
 add_project_root_to_path()
 
 # ===================== 第二步：导入项目模块（含常量） =====================
@@ -24,8 +25,9 @@ from app.model import load_local_fashion_mnist, train_model
 from app.predict import (
     load_trained_model_and_scaler,
     predict_fashion_mnist,
-    FASHION_MNIST_MODEL_NAME  # 导入常量，解决 NameError
+    FASHION_MNIST_MODEL_NAME,  # 导入常量，解决 NameError
 )
+
 
 # ===================== 第三步：测试用例 =====================
 def test_data_loading():
@@ -65,12 +67,21 @@ def test_model_prediction():
     # 预测
     class_index, class_name = predict_fashion_mnist(model, scaler, test_sample)
     # 结果验证
-    assert isinstance(class_index, (int, np.integer)), \
-        f"类别索引类型错误：{type(class_index)}，需int或numpy.int"
+    assert isinstance(
+        class_index, (int, np.integer)
+    ), f"类别索引类型错误：{type(class_index)}，需int或numpy.int"
     assert 0 <= class_index <= 9, f"类别索引超出范围：{class_index}"
     assert class_name in [
-        "T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
-        "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"
+        "T-shirt/top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle boot",
     ], f"未知类别名称：{class_name}"
 
 

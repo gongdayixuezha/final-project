@@ -11,11 +11,11 @@ def add_project_root_to_path() -> str:
     current_script_path = os.path.abspath(__file__)
     app_dir = os.path.dirname(current_script_path)
     project_root = os.path.dirname(app_dir)
-    
+
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
         print(f"✅ 根目录已加入模块搜索路径：{project_root}")
     else:
         print(f"✅ 根目录已在搜索路径中：{project_root}")
-    
+
     return project_root
