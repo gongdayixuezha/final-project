@@ -15,7 +15,6 @@ def load_idx_file(file_path: str) -> np.ndarray:
             "正确路径应为：E:\\VSproject\\final-project\\data\\raw\\train-images-idx3-ubyte\n"
             "提示：需将Fashion MNIST的4个idx文件解压到data/raw/目录（无.gz后缀）"
         )
-    
     with open(file_path, "rb") as f:
         magic_number, num_items = struct.unpack(">II", f.read(8))
         if magic_number == 2051:  # 图像文件（28x28=784特征）
@@ -40,30 +39,26 @@ def load_local_fashion_mnist(scale_data: bool = True) -> tuple:
     train_lab_path = os.path.join(data_root, "raw", "train-labels-idx1-ubyte")
     test_img_path = os.path.join(data_root, "raw", "t10k-images-idx3-ubyte")
     test_lab_path = os.path.join(data_root, "raw", "t10k-labels-idx1-ubyte")
-    
     # 读取并验证数据维度（Fashion MNIST固定维度，确保不是旧数据）
     print("🔍 正在加载Fashion MNIST数据...")
     X_train = load_idx_file(train_img_path)
     y_train = load_idx_file(train_lab_path)
     X_test = load_idx_file(test_img_path)
     y_test = load_idx_file(test_lab_path)
-    
     # 强制验证数据正确性（避免加载鸢尾花等旧数据）
     assert X_train.shape == (60000, 784), f"❌ 数据维度错误！训练集应为(60000,784)，实际为{X_train.shape}"
     assert y_train.shape == (60000,), f"❌ 标签维度错误！训练标签应为(60000,)，实际为{y_train.shape}"
     assert len(set(y_train)) == 10, f"❌ 分类数错误！Fashion MNIST是10分类，实际为{len(set(y_train))}"
-    
     # 标准化（解决模型收敛问题，必须执行）
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train) if scale_data else X_train
     X_test_scaled = scaler.transform(X_test) if scale_data else X_test
-    
     # 打印加载结果（方便用户验证）
     print(f"✅ Fashion MNIST加载完成：")
     print(f"  - 训练集：{X_train_scaled.shape} | 训练标签：{y_train.shape}")
     print(f"  - 测试集：{X_test_scaled.shape} | 测试标签：{y_test.shape}")
     print(f"  - 标准化生效：训练集均值={X_train_scaled.mean():.4f}（接近0）")
-    
+
     return X_train_scaled, X_test_scaled, y_train, y_test, scaler
 
 
