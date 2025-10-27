@@ -8,6 +8,7 @@ from sklearn.preprocessing import StandardScaler
 def load_idx_file(file_path: str) -> np.ndarray:
     """专用：读取Fashion MNIST的idx3-ubyte/idx1-ubyte格式文件"""
     import struct
+
     # 验证文件是否存在，给出明确错误提示
     if not os.path.exists(file_path):
         raise FileNotFoundError(
@@ -19,7 +20,9 @@ def load_idx_file(file_path: str) -> np.ndarray:
         magic_number, num_items = struct.unpack(">II", f.read(8))
         if magic_number == 2051:  # 图像文件（28x28=784特征）
             rows, cols = struct.unpack(">II", f.read(8))
-            data = np.frombuffer(f.read(), dtype=np.uint8).reshape(num_items, rows * cols)
+            data = np.frombuffer(f.read(), dtype=np.uint8).reshape(
+                num_items, rows * cols
+            )
         elif magic_number == 2049:  # 标签文件（10分类）
             data = np.frombuffer(f.read(), dtype=np.uint8)
         else:
@@ -46,9 +49,16 @@ def load_local_fashion_mnist(scale_data: bool = True) -> tuple:
     X_test = load_idx_file(test_img_path)
     y_test = load_idx_file(test_lab_path)
     # 强制验证数据正确性（避免加载鸢尾花等旧数据）
-    assert X_train.shape == (60000, 784), f"❌ 数据维度错误！训练集应为(60000,784)，实际为{X_train.shape}"
-    assert y_train.shape == (60000,), f"❌ 标签维度错误！训练标签应为(60000,)，实际为{y_train.shape}"
-    assert len(set(y_train)) == 10, f"❌ 分类数错误！Fashion MNIST是10分类，实际为{len(set(y_train))}"
+    assert X_train.shape == (
+        60000,
+        784,
+    ), f"❌ 数据维度错误！训练集应为(60000,784)，实际为{X_train.shape}"
+    assert y_train.shape == (
+        60000,
+    ), f"❌ 标签维度错误！训练标签应为(60000,)，实际为{y_train.shape}"
+    assert (
+        len(set(y_train)) == 10
+    ), f"❌ 分类数错误！Fashion MNIST是10分类，实际为{len(set(y_train))}"
     # 标准化（解决模型收敛问题，必须执行）
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train) if scale_data else X_train

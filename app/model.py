@@ -4,7 +4,9 @@ import os
 import sys
 
 # 1. 计算项目根目录（无论脚本怎么运行，都能找到final-project目录）
-current_script_path = os.path.abspath(__file__)  # 当前model.py的绝对路径（如：e:/VSproject/final-project/app/model.py）
+current_script_path = os.path.abspath(
+    __file__
+)  # 当前model.py的绝对路径（如：e:/VSproject/final-project/app/model.py）
 app_dir = os.path.dirname(current_script_path)  # 上级目录：app/
 project_root = os.path.dirname(app_dir)  # 上上级目录：final-project（根目录）
 
@@ -22,6 +24,7 @@ import joblib
 from mlflow.models.signature import infer_signature
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+
 # 导入Fashion MNIST数据加载函数（此时app包已能正常识别）
 from app.data import load_local_fashion_mnist
 
@@ -30,6 +33,7 @@ load_dotenv()  # 加载.env（若配置了MLflow地址，优先使用；无则�
 # 强制设置Fashion MNIST专属实验（避免与鸢尾花实验混淆）
 mlflow.set_experiment("Fashion-MNIST-Logistic-Regression-Experiment")
 print(f"✅ MLflow实验已配置：Fashion-MNIST-Logistic-Regression-Experiment")
+
 
 # ===================== 第四步：模型训练函数（解决收敛问题）=====================
 def train_model(learning_rate: float = 0.1, max_iter: int = 1000) -> tuple:
@@ -53,18 +57,18 @@ def train_model(learning_rate: float = 0.1, max_iter: int = 1000) -> tuple:
         mlflow.log_param("solver", "saga")  # 关键：用saga求解器，适配多分类+大样本
         mlflow.log_param("max_iter", max_iter)  # 关键：提高迭代次数到1000
         mlflow.log_param("learning_rate", learning_rate)
-        mlflow.log_param("regularization_strength_C", 1/learning_rate)
+        mlflow.log_param("regularization_strength_C", 1 / learning_rate)
         mlflow.log_param("multi_class_strategy", "ovr")  # 适配10分类
         mlflow.log_param("dataset", "Fashion MNIST (60000 train / 10000 test)")
         mlflow.log_param("data_preprocessing", "StandardScaler (mean≈0, std=1)")
         # 4. 初始化模型（参数强制适配多分类和收敛）
         model = LogisticRegression(
-            C=1/learning_rate,  # 正则化强度（与学习率成反比）
-            solver="saga",       # 解决收敛：适合多分类+大样本
-            max_iter=max_iter,   # 解决收敛：足够的迭代次数
-            multi_class="ovr",   # 10分类策略（One-vs-Rest）
-            random_state=42,     # 固定随机种子，结果可复现
-            n_jobs=-1            # 用所有CPU核心加速训练
+            C=1 / learning_rate,  # 正则化强度（与学习率成反比）
+            solver="saga",  # 解决收敛：适合多分类+大样本
+            max_iter=max_iter,  # 解决收敛：足够的迭代次数
+            multi_class="ovr",  # 10分类策略（One-vs-Rest）
+            random_state=42,  # 固定随机种子，结果可复现
+            n_jobs=-1,  # 用所有CPU核心加速训练
         )
         # 5. 训练模型（无收敛警告）
         print(f"📌 开始训练模型：lr={learning_rate}, max_iter={max_iter}, solver=saga")
@@ -73,7 +77,9 @@ def train_model(learning_rate: float = 0.1, max_iter: int = 1000) -> tuple:
         y_pred = model.predict(X_test)
         test_accuracy = accuracy_score(y_test, y_pred)
         train_accuracy = model.score(X_train, y_train)
-        print(f"✅ 训练完成：训练准确率={train_accuracy:.4f}, 测试准确率={test_accuracy:.4f}")
+        print(
+            f"✅ 训练完成：训练准确率={train_accuracy:.4f}, 测试准确率={test_accuracy:.4f}"
+        )
         # 7. 记录MLflow指标（方便后续对比）
         mlflow.log_metric("train_accuracy", train_accuracy)
         mlflow.log_metric("test_accuracy", test_accuracy)
@@ -85,18 +91,21 @@ def train_model(learning_rate: float = 0.1, max_iter: int = 1000) -> tuple:
         os.remove("fashion_mnist_scaler.pkl")  # 清理本地临时文件
 
         # 8.2 记录模型（注册到MLflow，名称不含鸢尾花）
-        signature = infer_signature(X_train, model.predict(X_train))  # 自动推断输入输出格式
+        signature = infer_signature(
+            X_train, model.predict(X_train)
+        )  # 自动推断输入输出格式
         mlflow.sklearn.log_model(
             sk_model=model,
             artifact_path="fashion-mnist-lr-model",
             signature=signature,
-            registered_model_name="Fashion-MNIST-Logistic-Regression-Model"  # 新模型名，无旧残留
+            registered_model_name="Fashion-MNIST-Logistic-Regression-Model",  # 新模型名，无旧残留
         )
         print(f"✅ 模型已注册到MLflow：Fashion-MNIST-Logistic-Regression-Model")
         # 9. 记录数据加载脚本（确保可复现）
         mlflow.log_artifact("app/data.py", artifact_path="scripts")
         mlflow.log_artifact("app/model.py", artifact_path="scripts")
     return model, test_accuracy
+
 
 # ===================== 第五步：本地测试（验证代码运行）=====================
 if __name__ == "__main__":
@@ -119,5 +128,9 @@ if __name__ == "__main__":
     print(f"2. 浏览器访问：http://localhost:5000")
     print(f"3. 实验路径：{os.path.abspath('mlruns/')}")
     # 强制验证准确率（避免加载旧数据）
-    assert acc1 < 0.95, "❌ 警告：准确率异常高（>0.95），可能加载了鸢尾花数据！请检查data.py"
-    assert acc2 < 0.95, "❌ 警告：准确率异常高（>0.95），可能加载了鸢尾花数据！请检查data.py"
+    assert (
+        acc1 < 0.95
+    ), "❌ 警告：准确率异常高（>0.95），可能加载了鸢尾花数据！请检查data.py"
+    assert (
+        acc2 < 0.95
+    ), "❌ 警告：准确率异常高（>0.95），可能加载了鸢尾花数据！请检查data.py"

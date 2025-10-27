@@ -11,7 +11,7 @@ def test_data_loading():
     with pytest.raises(AssertionError):
         assert X_train.shape == (121, 4)  # 故意错误的维度，验证断言生效
     assert X_train.shape == (120, 4)  # 150个样本，80%训练集（120个），4个特征
-    assert y_test.shape == (30,)      # 20%测试集（30个）
+    assert y_test.shape == (30,)  # 20%测试集（30个）
     assert set(y_train) == {0, 1, 2}  # 鸢尾花3个类别
 
 

@@ -24,10 +24,10 @@ mlflow.set_tracking_uri(None)  # 本地模式
 FASHION_MNIST_MODEL_NAME = "Fashion-MNIST-Logistic-Regression-Model"
 SCALER_ARTIFACT_PATH = "preprocessing/fashion_mnist_scaler.pkl"
 
+
 # ===================== 第四步：加载模型和标准化器=====================
 def load_trained_model_and_scaler(
-    model_name: str = FASHION_MNIST_MODEL_NAME,
-    model_stage: str = "Latest"
+    model_name: str = FASHION_MNIST_MODEL_NAME, model_stage: str = "Latest"
 ) -> tuple[PyFuncModel, StandardScaler]:  # 现在StandardScaler已定义
     """从MLflow加载模型和对应的标准化器"""
     try:
@@ -38,7 +38,9 @@ def load_trained_model_and_scaler(
         client = mlflow.tracking.MlflowClient()
         latest_model_version = client.get_latest_versions(model_name)[0]
         run_id = latest_model_version.run_id
-        scaler_local_path = client.download_artifacts(run_id=run_id, path=SCALER_ARTIFACT_PATH)
+        scaler_local_path = client.download_artifacts(
+            run_id=run_id, path=SCALER_ARTIFACT_PATH
+        )
         scaler = joblib.load(scaler_local_path)
         print(f"✅ 模型和标准化器加载完成（run ID：{run_id[:8]}...）")
         return model, scaler
@@ -48,16 +50,23 @@ def load_trained_model_and_scaler(
             f"错误原因：{str(e)}"
         ) from e
 
+
 # ===================== 第五步：预测函数=====================
 def predict_fashion_mnist(
-    model: PyFuncModel,
-    scaler: StandardScaler,
-    input_features: list[float]
+    model: PyFuncModel, scaler: StandardScaler, input_features: list[float]
 ) -> tuple[int, str]:
     """预测Fashion MNIST类别（输入784维特征，输出类别索引+名称）"""
     fashion_mnist_classes = [
-        "T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
-        "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"
+        "T-shirt/top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle boot",
     ]
     # 验证输入维度
     if len(input_features) != 784:
@@ -70,6 +79,7 @@ def predict_fashion_mnist(
     class_index = model.predict(input_scaled)[0].astype(int)
     class_name = fashion_mnist_classes[class_index]
     return class_index, class_name
+
 
 # ===================== 第六步：本地测试=====================
 if __name__ == "__main__":
