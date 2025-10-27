@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 # 导入路径工具（确保能正确导入）
 from app.utils import add_project_root_to_path
+
 add_project_root_to_path()
 
 # ===================== 数据集配置 =====================
@@ -17,7 +18,7 @@ FASHION_MNIST_URLS = {
     "train_img": "https://github.com/zalandoresearch/fashion-mnist/raw/master/data/fashion/train-images-idx3-ubyte",
     "train_lab": "https://github.com/zalandoresearch/fashion-mnist/raw/master/data/fashion/train-labels-idx1-ubyte",
     "test_img": "https://github.com/zalandoresearch/fashion-mnist/raw/master/data/fashion/t10k-images-idx3-ubyte",
-    "test_lab": "https://github.com/zalandoresearch/fashion-mnist/raw/master/data/fashion/t10k-labels-idx1-ubyte"
+    "test_lab": "https://github.com/zalandoresearch/fashion-mnist/raw/master/data/fashion/t10k-labels-idx1-ubyte",
 }
 
 # 默认数据目录（修正为 data/raw，符合常规项目结构）
@@ -58,7 +59,9 @@ def download_fashion_mnist(data_root: str = None) -> None:
             except Exception as e:
                 # 关键：如果下载失败但本地有旧文件，提示使用本地文件
                 if os.path.exists(save_path) and os.path.getsize(save_path) > 0:
-                    print(f"\n⚠️ 下载失败，但检测到本地已有 {filename}（可能不完整），尝试继续使用...")
+                    print(
+                        f"\n⚠️ 下载失败，但检测到本地已有 {filename}（可能不完整），尝试继续使用..."
+                    )
                 else:
                     raise RuntimeError(
                         f"❌ 下载 {filename} 失败，且本地无可用文件！\n"
@@ -78,12 +81,14 @@ def load_idx_file(file_path: str) -> np.ndarray:
             f"❌ 未找到文件：{file_path_abs}\n"
             f"请确认文件是否存在，或手动下载放到该路径"
         )
-    
+
     with open(file_path_abs, "rb") as f:
         magic_number, num_items = struct.unpack(">II", f.read(8))
         if magic_number == 2051:  # 图像文件
             rows, cols = struct.unpack(">II", f.read(8))
-            data = np.frombuffer(f.read(), dtype=np.uint8).reshape(num_items, rows * cols)
+            data = np.frombuffer(f.read(), dtype=np.uint8).reshape(
+                num_items, rows * cols
+            )
         elif magic_number == 2049:  # 标签文件
             data = np.frombuffer(f.read(), dtype=np.uint8)
         else:
@@ -94,7 +99,7 @@ def load_idx_file(file_path: str) -> np.ndarray:
 def load_local_fashion_mnist(scale_data: bool = True) -> tuple:
     """加载本地数据集（优先使用本地文件，避免重复下载）"""
     load_dotenv()  # 加载环境变量（支持自定义数据路径）
-    
+
     # 确定数据目录（优先级：环境变量 > 默认值）
     data_root = os.getenv("FASHION_MNIST_DATA_ROOT", DEFAULT_DATA_ROOT)
     data_root_abs = os.path.abspath(data_root)
@@ -108,13 +113,15 @@ def load_local_fashion_mnist(scale_data: bool = True) -> tuple:
         "train_img": os.path.join(data_root_abs, "train-images-idx3-ubyte"),
         "train_lab": os.path.join(data_root_abs, "train-labels-idx1-ubyte"),
         "test_img": os.path.join(data_root_abs, "t10k-images-idx3-ubyte"),
-        "test_lab": os.path.join(data_root_abs, "t10k-labels-idx1-ubyte")
+        "test_lab": os.path.join(data_root_abs, "t10k-labels-idx1-ubyte"),
     }
 
     # 验证所有文件是否存在（最终检查）
     for name, path in file_paths.items():
         if not os.path.exists(path):
-            raise FileNotFoundError(f"❌ 关键文件缺失：{path}\n请手动下载并放置到该路径")
+            raise FileNotFoundError(
+                f"❌ 关键文件缺失：{path}\n请手动下载并放置到该路径"
+            )
 
     # 读取数据
     X_train = load_idx_file(file_paths["train_img"])
@@ -127,9 +134,11 @@ def load_local_fashion_mnist(scale_data: bool = True) -> tuple:
     X_train_scaled = scaler.fit_transform(X_train) if scale_data else X_train
     X_test_scaled = scaler.transform(X_test) if scale_data else X_test
 
-    print(f"✅ 数据集加载完成：\n"
-          f"  - 训练集：{X_train_scaled.shape} | 测试集：{X_test_scaled.shape}\n"
-          f"  - 数据来源：{data_root_abs}")
+    print(
+        f"✅ 数据集加载完成：\n"
+        f"  - 训练集：{X_train_scaled.shape} | 测试集：{X_test_scaled.shape}\n"
+        f"  - 数据来源：{data_root_abs}"
+    )
     return X_train_scaled, X_test_scaled, y_train, y_test, scaler
 
 
